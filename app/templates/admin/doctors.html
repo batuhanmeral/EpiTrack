@@ -1,0 +1,59 @@
+{% extends "admin/base.html" %}
+{% from "_macros.html" import pager %}
+{% block title %}Doktorlar{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h2 class="m-0">Doktorlar</h2>
+        <a href="{{ url_for('admin.doctor_new') }}" class="btn btn-primary btn-sm">+ Yeni Doktor</a>
+    </div>
+
+    <form method="GET" class="row g-2 mb-3">
+        <div class="col-md-9">
+            <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Ad veya TC ile ara...">
+        </div>
+        <div class="col-md-3 d-flex gap-1">
+            <button class="btn btn-primary flex-fill">Ara</button>
+            <a href="{{ url_for('admin.doctors') }}" class="btn btn-outline-secondary">Sıfırla</a>
+        </div>
+    </form>
+
+    {% if doctors %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Ad Soyad</th>
+                    <th>T.C. No</th>
+                    <th>Hasta Sayısı</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in doctors %}
+                <tr>
+                    <td>{{ d.id }}</td>
+                    <td>{{ d.fullname }}</td>
+                    <td>{{ d.tcno }}</td>
+                    <td>{{ d.patients|length }}</td>
+                    <td>
+                        <a href="{{ url_for('admin.doctor_edit', id=d.id) }}" class="btn btn-warning btn-sm">Düzenle</a>
+                        <form action="{{ url_for('admin.doctor_delete', id=d.id) }}" method="POST" class="d-inline"
+                            onsubmit="return confirm('Doktoru ve tüm hastalarını silmek istediğinize emin misiniz?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-danger btn-sm">Sil</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {{ pager(page_meta) }}
+    {% else %}
+    <p class="text-muted mb-0">Kayıt bulunamadı.</p>
+    {% endif %}
+</div>
+{% endblock %}

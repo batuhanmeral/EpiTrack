@@ -1,0 +1,32 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-seizure_tracking}
+    ports:
+      - "${MYSQL_HOST_PORT:-3307}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-degistirin-uzun-rastgele-bir-deger}
+      DATABASE_URL: mysql+pymysql://root:${MYSQL_ROOT_PASSWORD:-root}@db:3306/${MYSQL_DATABASE:-seizure_tracking}
+      FLASK_DEBUG: "0"
+    ports:
+      - "5000:5000"
+
+volumes:
+  mysql_data:

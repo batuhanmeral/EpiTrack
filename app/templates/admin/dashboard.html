@@ -1,0 +1,93 @@
+{% extends "admin/base.html" %}
+{% from "_macros.html" import pager %}
+{% block title %}Gösterge Paneli{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('admin.doctors') }}" class="text-decoration-none">
+            <div class="card text-center h-100">
+                <h2 class="display-5 text-primary mb-0">{{ stats.doctors }}</h2>
+                <p class="text-muted mb-0">Doktor</p>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('admin.patients') }}" class="text-decoration-none">
+            <div class="card text-center h-100">
+                <h2 class="display-5 text-primary mb-0">{{ stats.patients }}</h2>
+                <p class="text-muted mb-0">Hasta</p>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('admin.seizures') }}" class="text-decoration-none">
+            <div class="card text-center h-100">
+                <h2 class="display-5 text-primary mb-0">{{ stats.seizures }}</h2>
+                <p class="text-muted mb-0">Nöbet</p>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center h-100">
+            <h2 class="display-5 text-primary mb-0">{{ stats.messages }}</h2>
+            <p class="text-muted mb-0">Mesaj</p>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-7">
+        <div class="card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="m-0">Son İşlemler</h3>
+                <a href="{{ url_for('admin.audit') }}" class="btn btn-primary btn-sm">Tümü</a>
+            </div>
+            {% if recent_audit %}
+            <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>Zaman</th>
+                            <th>Aktör</th>
+                            <th>İşlem</th>
+                            <th>Detay</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in recent_audit %}
+                        <tr>
+                            <td>{{ log.timestamp.strftime('%d.%m %H:%M') }}</td>
+                            <td>{{ log.actor_name }} <span class="text-muted">({{ log.actor_role }})</span></td>
+                            <td>{{ log.action }} · {{ log.entity }}</td>
+                            <td>{{ log.details }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {{ pager(recent_audit_meta) }}
+            {% else %}
+            <p class="text-muted mb-0">Henüz kayıt yok.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-5">
+        <div class="card">
+            <h3 class="mb-3">Son Nöbetler</h3>
+            {% if recent_seizures %}
+            <ul class="list-group list-group-flush">
+                {% for s in recent_seizures %}
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>{{ s.patient.fullname }}</span>
+                    <span class="text-muted">{{ s.seizuretime.strftime('%d.%m.%Y %H:%M') }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted mb-0">Henüz nöbet kaydı yok.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

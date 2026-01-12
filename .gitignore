@@ -1,0 +1,36 @@
+.env
+*.env
+!.env.example
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+venv/
+.venv/
+env/
+
+instance/
+*.db
+*.sqlite3
+
+# Generated reports
+*.pdf
+*.csv
+
+# Logs & test cache
+*.log
+.pytest_cache/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Screenshots in docs/ are intentionally tracked (referenced by README)
+!docs/screenshots/*.png

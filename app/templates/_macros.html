@@ -1,0 +1,37 @@
+{% macro pager(meta) %}
+{% if meta and meta.total_pages > 1 %}
+<nav class="mt-3">
+    <ul class="pagination justify-content-center mb-0">
+        <li class="page-item {% if not meta.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="?{{ merge_query(page=meta.page - 1) }}">&laquo; Önceki</a>
+        </li>
+        {% set start = 1 if meta.total_pages <= 5 or meta.page <= 3 else meta.page - 2 %}
+        {% set end = meta.total_pages if meta.total_pages <= 5 or meta.page >= meta.total_pages - 2 else meta.page + 2 %}
+        {% if start > 1 %}
+        <li class="page-item">
+            <a class="page-link" href="?{{ merge_query(page=1) }}">1</a>
+        </li>
+        {% if start > 2 %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
+        {% endif %}
+        {% for p in range(start, end + 1) %}
+        <li class="page-item {% if p == meta.page %}active{% endif %}">
+            <a class="page-link" href="?{{ merge_query(page=p) }}">{{ p }}</a>
+        </li>
+        {% endfor %}
+        {% if end < meta.total_pages %}
+        {% if end < meta.total_pages - 1 %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
+        <li class="page-item">
+            <a class="page-link" href="?{{ merge_query(page=meta.total_pages) }}">{{ meta.total_pages }}</a>
+        </li>
+        {% endif %}
+        <li class="page-item {% if not meta.has_next %}disabled{% endif %}">
+            <a class="page-link" href="?{{ merge_query(page=meta.page + 1) }}">Sonraki &raquo;</a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
+{% endmacro %}

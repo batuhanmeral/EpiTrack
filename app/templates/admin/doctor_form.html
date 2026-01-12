@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ 'Doktor Düzenle' if doctor else 'Yeni Doktor' }}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+    <h2 class="mb-3">{{ 'Doktor Düzenle' if doctor else 'Yeni Doktor' }}</h2>
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group mb-3">
+            <label>Ad Soyad:</label>
+            <input type="text" name="fullname" class="form-control" value="{{ doctor.fullname if doctor else '' }}"
+                required>
+        </div>
+        <div class="form-group mb-3">
+            <label>T.C. Kimlik Numarası:</label>
+            <input type="text" name="tcno" class="form-control" maxlength="11"
+                value="{{ doctor.tcno if doctor else '' }}" required>
+        </div>
+        <div class="form-group mb-3">
+            <label>{{ 'Yeni Parola (boş bırakılırsa değişmez):' if doctor else 'Parola:' }}</label>
+            <input type="password" name="password" class="form-control" {% if not doctor %}required{% endif %}>
+        </div>
+        <button type="submit" class="btn btn-primary">Kaydet</button>
+        <a href="{{ url_for('admin.doctors') }}" class="btn btn-outline-secondary">İptal</a>
+    </form>
+</div>
+{% endblock %}

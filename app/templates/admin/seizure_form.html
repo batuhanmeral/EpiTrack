@@ -1,0 +1,66 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ 'Nöbet Düzenle' if seizure else 'Yeni Nöbet' }}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+    <h2 class="mb-3">{{ 'Nöbet Düzenle' if seizure else 'Yeni Nöbet' }}</h2>
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group mb-3">
+            <label>Hasta:</label>
+            <select name="patientid" class="form-select" required>
+                <option value="">Hasta Seçiniz</option>
+                {% for p in patients %}
+                <option value="{{ p.id }}" {% if seizure and seizure.patientid==p.id %}selected{% endif %}>
+                    {{ p.fullname }} (TC: {{ p.tcno }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label>Tarih:</label>
+                <input type="date" name="date" class="form-control" required
+                    value="{{ seizure.seizuretime.strftime('%Y-%m-%d') if seizure else '' }}">
+            </div>
+            <div class="col-md-6">
+                <label>Saat:</label>
+                <input type="time" name="time" class="form-control" required
+                    value="{{ seizure.seizuretime.strftime('%H:%M') if seizure else '' }}">
+            </div>
+        </div>
+        <div class="form-group mb-3">
+            <label>Nöbet Tipi:</label>
+            <select name="type" class="form-select">
+                {% for value, label in seizure_types %}
+                <option value="{{ value }}" {% if seizure and seizure.type==value %}selected{% endif %}>{{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group mb-3">
+            <label>Süre (dakika):</label>
+            <input type="number" name="duration" min="0" class="form-control"
+                value="{{ seizure.duration if seizure and seizure.duration is not none else '' }}">
+        </div>
+        <div class="form-group mb-3">
+            <label>Postiktal Durum:</label>
+            <input type="text" name="post_seizure" class="form-control"
+                value="{{ seizure.postictal if seizure else '' }}">
+        </div>
+        <div class="form-group mb-3">
+            <label>Tetikleyici:</label>
+            <select name="trigger" class="form-select">
+                <option value="">Seçiniz</option>
+                {% for t in seizure_triggers %}
+                <option value="{{ t }}" {% if seizure and seizure.trigger==t %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+                {% if seizure and seizure.trigger and seizure.trigger not in seizure_triggers %}
+                <option value="{{ seizure.trigger }}" selected>{{ seizure.trigger }} (mevcut)</option>
+                {% endif %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Kaydet</button>
+        <a href="{{ url_for('admin.seizures') }}" class="btn btn-outline-secondary">İptal</a>
+    </form>
+</div>
+{% endblock %}

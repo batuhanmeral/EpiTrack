@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giriş Paneli | EpiTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+</head>
+
+<body>
+    <div class="header">
+        <div class="container">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h1><b>EpiTrack</b></h1>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="card" style="max-width: 400px; margin: 50px auto;">
+            <h2 style="text-align: center; margin-bottom: 20px;">Giriş Paneli</h2>
+            <form action="{{ url_for('auth.login') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group mb-3">
+                    <label>Kullanıcı Tipi:</label>
+                    <select name="role" class="form-control" required>
+                        <option value="patient">Hasta</option>
+                        <option value="doctor">Doktor</option>
+                    </select>
+                </div>
+                <div class="form-group mb-3">
+                    <label>T.C. Kimlik Numarası:</label>
+                    <input type="text" name="tcno" class="form-control" required placeholder="T.C. Kimlik numaranız">
+                </div>
+                <div class="form-group mb-3">
+                    <label>Parola:</label>
+                    <input type="password" name="password" class="form-control" placeholder="Parolanız" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Giriş Yap</button>
+            </form>
+            <p class="text-center mt-3">
+                Hesabınız yok mu? <a href="{{ url_for('auth.register') }}" class="text-decoration-none fw-bold">Kayıt Ol</a>
+            </p>
+            <p class="text-center mt-1">
+                <a href="{{ url_for('admin.login') }}" class="text-decoration-none text-muted small">Yönetici Girişi</a>
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

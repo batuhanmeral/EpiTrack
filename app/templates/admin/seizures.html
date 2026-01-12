@@ -1,0 +1,53 @@
+{% extends "admin/base.html" %}
+{% from "_macros.html" import pager %}
+{% block title %}Nöbetler{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h2 class="m-0">Nöbet Kayıtları</h2>
+        <a href="{{ url_for('admin.seizure_new') }}" class="btn btn-primary btn-sm">+ Yeni Nöbet</a>
+    </div>
+
+    {% if seizures %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Hasta</th>
+                    <th>Tarih/Saat</th>
+                    <th>Tip</th>
+                    <th>Süre (dk)</th>
+                    <th>Tetikleyici</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in seizures %}
+                <tr>
+                    <td>{{ s.id }}</td>
+                    <td>{{ s.patient.fullname }}</td>
+                    <td>{{ s.seizuretime.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ s.type or '-' }}</td>
+                    <td>{{ s.duration if s.duration is not none else '-' }}</td>
+                    <td>{{ s.trigger or '-' }}</td>
+                    <td>
+                        <a href="{{ url_for('admin.seizure_edit', id=s.id) }}" class="btn btn-warning btn-sm">Düzenle</a>
+                        <form action="{{ url_for('admin.seizure_delete', id=s.id) }}" method="POST" class="d-inline"
+                            onsubmit="return confirm('Bu nöbet kaydını silmek istediğinize emin misiniz?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-danger btn-sm">Sil</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {{ pager(page_meta) }}
+    {% else %}
+    <p class="text-muted mb-0">Kayıt bulunamadı.</p>
+    {% endif %}
+</div>
+{% endblock %}

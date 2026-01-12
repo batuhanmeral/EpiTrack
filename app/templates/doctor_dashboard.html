@@ -1,0 +1,242 @@
+{% from "_macros.html" import pager %}
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doktor Paneli | EpiTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="header">
+        <div class="container">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h1><b>EpiTrack</b></h1>
+                <div class="nav-actions">
+                    <div class="user-menu">
+                        <button type="button" class="user-menu-btn" data-dropdown-toggle aria-haspopup="true" aria-expanded="false">
+                            <span class="user-avatar">{{ doctor.fullname[0]|upper }}</span>
+                            <span class="user-name">Dr. {{ doctor.fullname }}</span>
+                            <span class="user-caret">▾</span>
+                        </button>
+                        <div class="user-menu-dropdown">
+                            <a href="{{ url_for('auth.profile') }}">Profilimi Düzenle</a>
+                            <a href="{{ url_for('auth.logout') }}">Çıkış Yap</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="row mb-4">
+            <div class="{{ 'col-lg-6 mb-4 mb-lg-0' if selected_patient else 'col-12' }}">
+                <div class="card h-100">
+                    <h2>Hasta Seçimi</h2>
+                    <form action="{{ url_for('doctor.dashboard') }}" method="GET">
+                        <div class="mb-3">
+                            <label for="patientSelect" class="form-label">Kayıtlarını görüntülemek istediğiniz hastayı seçiniz:</label>
+                            <select id="patientSelect" name="patient_id" class="form-select" onchange="this.form.submit()">
+                                <option value="">-- Hasta Seçiniz --</option>
+                                {% for p in patients %}
+                                <option value="{{ p.id }}" {% if selected_patient and selected_patient.id==p.id %}selected{%
+                                    endif %}>
+                                    TC: {{ p.tcno }} - {{ p.fullname }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </form>
+                    {% if not patients %}
+                    <p class="text-muted">Listenizde henüz kayıtlı hasta yok.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if selected_patient %}
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="m-0">Hasta Bilgileri</h2>
+                        <a href="{{ url_for('doctor.messages', patient_id=selected_patient.id) }}"
+                            class="btn btn-primary btn-sm">Mesajlar{% if unread %}
+                            <span class="badge rounded-pill bg-light text-dark">{{ unread }}</span>{% endif %}</a>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-6 mb-2"><strong>Hasta Adı:</strong> {{ selected_patient.fullname }}</div>
+                        <div class="col-sm-6 mb-2"><strong>T.C Kimlik Numarası:</strong> {{ selected_patient.tcno }}</div>
+                        <div class="col-sm-6 mb-2"><strong>Doğum Tarihi:</strong> {{ selected_patient.birthdate }}</div>
+                        <div class="col-sm-6 mb-2"><strong>Kan Grubu:</strong> {{ selected_patient.bloodtype }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if selected_patient %}
+
+        {% if stats and stats.total %}
+        <div class="card mb-4" id="statsPanel" data-stats='{{ stats|tojson }}'>
+            <h3>İstatistikler</h3>
+            <div class="row text-center mb-4">
+                <div class="col-md-6">
+                    <h3 class="display-5 text-primary mb-0">{{ stats.total }}</h3>
+                    <p class="text-muted">Toplam Nöbet (filtreli)</p>
+                </div>
+                <div class="col-md-6">
+                    <h3 class="display-5 text-primary mb-0">
+                        {{ stats.avg_duration if stats.avg_duration is not none else '—' }}</h3>
+                    <p class="text-muted">Ortalama Süre (dk)</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <h5 class="text-center">Aylık Nöbet Trendi (12 ay)</h5>
+                    <div style="position: relative; height: 220px;"><canvas id="monthlyChart"></canvas></div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <h5 class="text-center">Nöbet Tipi Dağılımı</h5>
+                    <div style="position: relative; height: 220px;"><canvas id="typeChart"></canvas></div>
+                </div>
+                <div class="col-md-12 mb-3">
+                    <h5 class="text-center">En Sık Tetikleyiciler</h5>
+                    <div style="position: relative; height: 220px;"><canvas id="triggerChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <h3 class="m-0">Nöbet Geçmişi</h3>
+                <div>
+                    <a href="{{ url_for('reports.download_report', patient_id=selected_patient.id, **filters) }}"
+                        class="btn btn-danger btn-sm">PDF İndir</a>
+                    <a href="{{ url_for('reports.export_csv', patient_id=selected_patient.id, **filters) }}"
+                        class="btn btn-success btn-sm">CSV İndir</a>
+                </div>
+            </div>
+
+            <form method="GET" class="row g-2 align-items-end mb-3">
+                <input type="hidden" name="patient_id" value="{{ selected_patient.id }}">
+                <div class="col-md-3">
+                    <label class="form-label mb-0">Başlangıç</label>
+                    <input type="date" name="start" class="form-control" value="{{ filters.get('start', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label mb-0">Bitiş</label>
+                    <input type="date" name="end" class="form-control" value="{{ filters.get('end', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label mb-0">Ara (tip/tetikleyici/sonrası)</label>
+                    <input type="text" name="q" class="form-control" value="{{ filters.get('q', '') }}"
+                        placeholder="Örn: Stres">
+                </div>
+                <div class="col-md-2 d-flex gap-1">
+                    <button type="submit" class="btn btn-primary flex-fill">Filtrele</button>
+                    <a href="{{ url_for('doctor.dashboard', patient_id=selected_patient.id) }}"
+                        class="btn btn-outline-secondary">Sıfırla</a>
+                </div>
+            </form>
+
+            {% if history %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Saat</th>
+                            <th>Tip</th>
+                            <th>Süre (dk)</th>
+                            <th>Nöbet Sonrası</th>
+                            <th>Tetikleyici</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rec in history %}
+                        <tr>
+                            <td>{{ rec.seizuretime.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ rec.seizuretime.strftime('%H:%M') }}</td>
+                            <td>{{ rec.type }}</td>
+                            <td>{{ rec.duration }}</td>
+                            <td>{{ rec.postictal }}</td>
+                            <td>{{ rec.trigger }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {{ pager(page_meta) }}
+            {% else %}
+            <div class="alert alert-info m-0">Seçilen kriterlere uygun nöbet kaydı bulunmamaktadır.</div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        (function () {
+            const panel = document.getElementById('statsPanel');
+            if (!panel || typeof Chart === 'undefined') return;
+            const stats = JSON.parse(panel.dataset.stats);
+            const palette = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#8BC34A', '#999999'];
+
+            new Chart(document.getElementById('monthlyChart'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(stats.months),
+                    datasets: [{ label: 'Nöbet', data: Object.values(stats.months), backgroundColor: '#36A2EB' }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                }
+            });
+
+            new Chart(document.getElementById('typeChart'), {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(stats.by_type),
+                    datasets: [{ data: Object.values(stats.by_type), backgroundColor: palette }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            new Chart(document.getElementById('triggerChart'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(stats.by_trigger),
+                    datasets: [{
+                        label: 'Nöbet',
+                        data: Object.values(stats.by_trigger),
+                        backgroundColor: Object.keys(stats.by_trigger).map((_, i) => palette[i % palette.length])
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
