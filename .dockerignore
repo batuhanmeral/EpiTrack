@@ -26,5 +26,9 @@ instance/
 .DS_Store
 *.swp
 
+# Docs & dev files (not needed in the runtime image)
+docs/
 README.md
 LICENSE
+.editorconfig
+.gitattributes
