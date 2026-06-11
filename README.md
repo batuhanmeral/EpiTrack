@@ -97,7 +97,7 @@ EpiTrack is a server-rendered web app driven by three roles.
 **1. Bootstrap an administrator** via the CLI:
 
 ```bash
-flask create-admin --username admin --fullname "Jane Doe" --password "StrongPass123"
+flask create-admin --username admin --fullname "Batuhan Meral" --password "StrongPass123"
 ```
 
 **2. Register and sign in.** Patients and doctors self-register at `/register`; admins sign in at `/admin/login`.
@@ -118,9 +118,7 @@ curl -b cookies.txt http://localhost:5000/download_report/1 -o seizures.pdf
 curl -b cookies.txt http://localhost:5000/export_csv/1 -o seizures.csv
 ```
 
-## 📸 Screenshots & Demo
-
-🔗 **Live Demo:** _[Add your deployment URL here]_
+## 📸 Screenshots
 
 | Patient Dashboard | Doctor View | Admin Panel |
 |:---:|:---:|:---:|
