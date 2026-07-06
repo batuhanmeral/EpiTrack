@@ -1,9 +1,9 @@
 from urllib.parse import urlencode
 
-from flask import Flask, request
+from flask import Flask, request, flash, redirect, url_for
 
 from config import Config
-from app.extensions import db, migrate, csrf
+from app.extensions import db, migrate, csrf, limiter
 
 
 def create_app(config_class=Config):
@@ -13,6 +13,14 @@ def create_app(config_class=Config):
     db.init_app(app)
     migrate.init_app(app, db)
     csrf.init_app(app)
+    limiter.init_app(app)
+
+    @app.errorhandler(429)
+    def too_many_requests(e):
+        flash('Çok fazla deneme yapıldı. Lütfen bir dakika sonra tekrar deneyin.', 'danger')
+        if request.path.startswith('/admin'):
+            return redirect(url_for('admin.login'))
+        return redirect(url_for('auth.index'))
 
     from app import models
 

@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from werkzeug.security import check_password_hash
 from sqlalchemy import or_, func
 
-from app.extensions import db
+from app.extensions import db, limiter
 from app.models import Doctor, Patient, Seizure, Message, Admin, AuditLog
 from app.constants import SEIZURE_TYPES, SEIZURE_TRIGGERS
 from app.helpers import (
@@ -16,6 +16,7 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 
 @admin_bp.route('/login', methods=['GET', 'POST'])
+@limiter.limit('10 per minute', methods=['POST'])
 def login():
     if request.method == 'POST':
         username = request.form.get('username')
@@ -125,8 +126,12 @@ def doctor_new():
         if Doctor.query.filter_by(tcno=tcno).first():
             flash('Bu TC No ile kayıtlı doktor zaten var.', 'danger')
             return redirect(url_for('admin.doctor_new'))
+        password = (request.form.get('password') or '').strip()
+        if not password:
+            flash('Parola boş bırakılamaz.', 'danger')
+            return redirect(url_for('admin.doctor_new'))
         doc = Doctor(fullname=request.form.get('fullname'), tcno=tcno,
-                     password=hash_password(request.form.get('password') or '1234'))
+                     password=hash_password(password), is_approved=True)
         db.session.add(doc)
         db.session.commit()
         log_audit('create', 'doctor', doc.id, f'Admin doktor ekledi: {doc.fullname}')
@@ -157,10 +162,24 @@ def doctor_edit(id):
     return render_template('admin/doctor_form.html', doctor=doctor)
 
 
+@admin_bp.route('/doctors/<int:id>/approve', methods=['POST'])
+@admin_required
+def doctor_approve(id):
+    doctor = db.get_or_404(Doctor, id)
+    doctor.is_approved = True
+    db.session.commit()
+    log_audit('update', 'doctor', doctor.id, f'Doktor onaylandı: {doctor.fullname}')
+    flash('Doktor onaylandı.', 'success')
+    return redirect(url_for('admin.doctors'))
+
+
 @admin_bp.route('/doctors/<int:id>/delete', methods=['POST'])
 @admin_required
 def doctor_delete(id):
     doctor = db.get_or_404(Doctor, id)
+    if doctor.patients:
+        flash('Bu doktora atanmış hastalar var. Silmeden önce hastaları başka bir doktora aktarın.', 'danger')
+        return redirect(url_for('admin.doctors'))
     name = doctor.fullname
     db.session.delete(doctor)
     db.session.commit()
@@ -179,7 +198,7 @@ def patients():
 @admin_bp.route('/patients/new', methods=['GET', 'POST'])
 @admin_required
 def patient_new():
-    doctors = Doctor.query.all()
+    doctors = Doctor.query.filter_by(is_approved=True).all()
     if request.method == 'POST':
         tcno = request.form.get('tcno')
         if not is_valid_tckn(tcno):
@@ -188,6 +207,10 @@ def patient_new():
         if Patient.query.filter_by(tcno=tcno).first():
             flash('Bu TC No ile kayıtlı hasta zaten var.', 'danger')
             return redirect(url_for('admin.patient_new'))
+        password = (request.form.get('password') or '').strip()
+        if not password:
+            flash('Parola boş bırakılamaz.', 'danger')
+            return redirect(url_for('admin.patient_new'))
         birthdate = None
         if request.form.get('birthdate'):
             try:
@@ -195,7 +218,7 @@ def patient_new():
             except ValueError:
                 pass
         pat = Patient(fullname=request.form.get('fullname'), tcno=tcno,
-                      password=hash_password(request.form.get('password') or '1234'),
+                      password=hash_password(password),
                       bloodtype=request.form.get('bloodtype'), birthdate=birthdate,
                       doctorid=request.form.get('doctorid'))
         db.session.add(pat)
@@ -210,7 +233,7 @@ def patient_new():
 @admin_required
 def patient_edit(id):
     patient = db.get_or_404(Patient, id)
-    doctors = Doctor.query.all()
+    doctors = Doctor.query.filter_by(is_approved=True).all()
     if request.method == 'POST':
         tcno = request.form.get('tcno')
         if tcno and tcno != patient.tcno and not is_valid_tckn(tcno):

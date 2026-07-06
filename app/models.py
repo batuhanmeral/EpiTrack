@@ -7,7 +7,8 @@ class Doctor(db.Model):
     fullname = db.Column(db.String(100), nullable=False)
     tcno = db.Column(db.String(11), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
-    patients = db.relationship('Patient', backref='doctor', lazy=True, cascade="all, delete-orphan")
+    is_approved = db.Column(db.Boolean, default=False, nullable=False)
+    patients = db.relationship('Patient', backref='doctor', lazy=True)
 
 
 class Patient(db.Model):

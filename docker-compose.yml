@@ -22,7 +22,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      SECRET_KEY: ${SECRET_KEY:-degistirin-uzun-rastgele-bir-deger}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env (python -c "import secrets; print(secrets.token_hex(32))")}
       DATABASE_URL: mysql+pymysql://root:${MYSQL_ROOT_PASSWORD:-root}@db:3306/${MYSQL_DATABASE:-seizure_tracking}
       FLASK_DEBUG: "0"
     ports:

@@ -2,7 +2,7 @@ import datetime
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 
-from app.extensions import db
+from app.extensions import db, limiter
 from app.models import Doctor, Patient
 from app.helpers import hash_password, verify_password, is_valid_tckn, log_audit, login_required
 
@@ -23,7 +23,7 @@ def index():
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
-    doctors = Doctor.query.all()
+    doctors = Doctor.query.filter_by(is_approved=True).all()
     if request.method == 'POST':
         role = request.form.get('role')
         fullname = request.form.get('fullname')
@@ -40,11 +40,11 @@ def register():
                 flash('Bu TC No ile kayıtlı doktor zaten var.', 'danger')
                 return redirect(url_for('auth.register'))
 
-            new_doc = Doctor(fullname=fullname, tcno=tcno, password=hashed_pw)
+            new_doc = Doctor(fullname=fullname, tcno=tcno, password=hashed_pw, is_approved=False)
             db.session.add(new_doc)
             db.session.commit()
-            log_audit('create', 'doctor', new_doc.id, f'Kayıt: {fullname}')
-            flash('Doktor kaydı başarılı.', 'success')
+            log_audit('create', 'doctor', new_doc.id, f'Kayıt (onay bekliyor): {fullname}')
+            flash('Doktor kaydınız alındı. Hesabınız yönetici onayından sonra aktifleşecektir.', 'info')
             return redirect(url_for('auth.index'))
 
         elif role == 'patient':
@@ -76,6 +76,7 @@ def register():
 
 
 @auth_bp.route('/login', methods=['POST'])
+@limiter.limit('10 per minute')
 def login():
     role = request.form.get('role')
     tcno = request.form.get('tcno')
@@ -91,6 +92,9 @@ def login():
     elif role == 'doctor':
         user = Doctor.query.filter_by(tcno=tcno).first()
         if user and verify_password(user, password):
+            if not user.is_approved:
+                flash('Hesabınız henüz yönetici tarafından onaylanmadı.', 'warning')
+                return redirect(url_for('auth.index'))
             session['user_id'] = user.id
             session['role'] = 'doctor'
             session['name'] = user.fullname
@@ -155,7 +159,7 @@ def profile():
         flash('Profil bilgileriniz güncellendi.', 'success')
         return redirect(url_for('auth.index'))
 
-    doctors = Doctor.query.all() if role == 'patient' else []
+    doctors = Doctor.query.filter_by(is_approved=True).all() if role == 'patient' else []
     return render_template('edit_profile.html', user=user, role=role, doctors=doctors)
 
 
@@ -168,6 +172,10 @@ def delete_account():
 
         if role == 'doctor':
             user = db.session.get(Doctor, user_id)
+            if user and user.patients:
+                flash('Size atanmış hastalar varken hesabınızı silemezsiniz. '
+                      'Lütfen yönetici ile iletişime geçin.', 'danger')
+                return redirect(url_for('auth.profile'))
         else:
             user = db.session.get(Patient, user_id)
 

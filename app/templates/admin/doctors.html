@@ -28,6 +28,7 @@
                     <th>Ad Soyad</th>
                     <th>T.C. No</th>
                     <th>Hasta Sayısı</th>
+                    <th>Durum</th>
                     <th>İşlemler</th>
                 </tr>
             </thead>
@@ -39,9 +40,22 @@
                     <td>{{ d.tcno }}</td>
                     <td>{{ d.patients|length }}</td>
                     <td>
+                        {% if d.is_approved %}
+                        <span class="badge bg-success">Onaylı</span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark">Onay bekliyor</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not d.is_approved %}
+                        <form action="{{ url_for('admin.doctor_approve', id=d.id) }}" method="POST" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-success btn-sm">Onayla</button>
+                        </form>
+                        {% endif %}
                         <a href="{{ url_for('admin.doctor_edit', id=d.id) }}" class="btn btn-warning btn-sm">Düzenle</a>
                         <form action="{{ url_for('admin.doctor_delete', id=d.id) }}" method="POST" class="d-inline"
-                            onsubmit="return confirm('Doktoru ve tüm hastalarını silmek istediğinize emin misiniz?');">
+                            onsubmit="return confirm('Bu doktoru silmek istediğinize emin misiniz? (Hastası olan doktor silinemez.)');">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button class="btn btn-danger btn-sm">Sil</button>
                         </form>
